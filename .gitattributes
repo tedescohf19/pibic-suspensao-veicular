@@ -1,0 +1,3 @@
+# Preserve source CSV bytes and MATLAB figure files across platforms.
+*.csv -text
+*.fig binary

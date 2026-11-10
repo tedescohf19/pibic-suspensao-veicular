@@ -1,0 +1,131 @@
+import numpy as np
+from scipy.integrate import solve_ivp
+import pandas as pd
+import time
+
+# =====================================================================
+# 1. CONFIGURAÇÃO DA GERAÇÃO
+# =====================================================================
+NUM_SIMULACOES = 5000  # Começamos com 5.000 para testar a rapidez
+np.random.seed(42)
+
+# Sorteio dos Parâmetros do Veículo (Inputs)
+dataset_inputs = {
+    'M_s': np.random.uniform(150, 800, NUM_SIMULACOES),      # Massa suspensa (kg)
+    'm_u': np.random.uniform(20, 80, NUM_SIMULACOES),        # Massa não-suspensa (kg)
+    'k_s': np.random.uniform(5000, 80000, NUM_SIMULACOES),   # Rigidez da mola (N/m)
+    'c_s': np.random.uniform(500, 8000, NUM_SIMULACOES),     # Amortecimento (N.s/m)
+    'k_t': np.random.uniform(100000, 400000, NUM_SIMULACOES),# Rigidez do pneu (N/m)
+    'Velocidade_kmh': np.random.uniform(10, 120, NUM_SIMULACOES),
+    'Perfil_Pista': np.random.choice(['Degrau', 'Lombada', 'ISO_8608'], NUM_SIMULACOES),
+    'Classe_ISO': np.random.uniform(1, 16, NUM_SIMULACOES)   # Só usado se Perfil == ISO
+}
+
+dataset_completo = []
+t_span = (0, 4) # 4 segundos de simulação
+t_eval = np.linspace(0, 4, 400) # 100 Hz de amostragem
+
+print(f"Iniciando integração RK45 para {NUM_SIMULACOES} cenários...")
+start_time = time.time()
+
+# =====================================================================
+# 2. LOOP DE INTEGRAÇÃO (Runge-Kutta 4ª Ordem)
+# =====================================================================
+for i in range(NUM_SIMULACOES):
+    # Extração de variáveis locais
+    M_s = dataset_inputs['M_s'][i]
+    m_u = dataset_inputs['m_u'][i]
+    k_s = dataset_inputs['k_s'][i]
+    c_s = dataset_inputs['c_s'][i]
+    k_t = dataset_inputs['k_t'][i]
+    V_ms = dataset_inputs['Velocidade_kmh'][i] / 3.6
+    perfil = dataset_inputs['Perfil_Pista'][i]
+    rugosidade = dataset_inputs['Classe_ISO'][i]
+    
+    # ---------------------------------------------------------
+    # Definição da Excitação (z_r) consoante o Perfil Sorteado
+    # ---------------------------------------------------------
+    if perfil == 'Degrau':
+        def z_r_func(t):
+            return 0.05 if t >= 0.5 else 0.0 # Sobe 5cm no instante 0.5s
+            
+    elif perfil == 'Lombada':
+        comprimento_lombada = 3.7 # metros
+        altura_lombada = 0.1 # 10cm
+        tempo_passagem = comprimento_lombada / V_ms
+        def z_r_func(t):
+            if 0.5 <= t <= (0.5 + tempo_passagem):
+                # Meio seno
+                return altura_lombada * np.sin(np.pi * (t - 0.5) / tempo_passagem)
+            return 0.0
+            
+    else: # ISO 8608 Aleatório
+        frequencias = np.linspace(0.5, 20.0, 30)
+        fases = 2 * np.pi * np.random.rand(30)
+        amplitudes = (0.01 * rugosidade) * (frequencias ** -0.5) * (V_ms / 20)
+        def z_r_func(t):
+            return np.sum(amplitudes * np.sin(2 * np.pi * frequencias * t + fases))
+
+    # ---------------------------------------------------------
+    # Equações de Movimento (Estado)
+    # ---------------------------------------------------------
+    def modelo_dinamico(t, x):
+        # x = [z_s, dz_s, z_u, dz_u]
+        z_s, dz_s, z_u, dz_u = x
+        z_r = z_r_func(t)
+        
+        # Forças
+        F_susp = k_s * (z_s - z_u) + c_s * (dz_s - dz_u)
+        F_pneu = k_t * (z_u - z_r)
+        
+        # Acelerações
+        ddz_s = -F_susp / M_s
+        ddz_u = (F_susp - F_pneu) / m_u
+        
+        return [dz_s, ddz_s, dz_u, ddz_u]
+    
+    # Integração Numérica (RK45)
+    sol = solve_ivp(modelo_dinamico, t_span, [0,0,0,0], t_eval=t_eval, method='RK45')
+    
+    # ---------------------------------------------------------
+    # 3. EXTRAÇÃO DAS MÉTRICAS (Outputs/Labels)
+    # ---------------------------------------------------------
+    z_s = sol.y[0]
+    z_u = sol.y[2]
+    
+    # Recalcular Aceleração da massa suspensa e Força do pneu
+    ddz_s_array = np.zeros_like(z_s)
+    F_pneu_array = np.zeros_like(z_s)
+    
+    for j in range(len(sol.t)):
+        t_inst = sol.t[j]
+        estado = sol.y[:, j]
+        derivadas = modelo_dinamico(t_inst, estado)
+        ddz_s_array[j] = derivadas[1] # Aceleração
+        F_pneu_array[j] = k_t * (estado[2] - z_r_func(t_inst)) # k_t * (z_u - z_r)
+        
+    # Guardar os valores RMS (Root Mean Square) para a rede neural
+    J1_conforto = np.sqrt(np.mean(ddz_s_array**2))
+    J2_seguranca = np.sqrt(np.mean(F_pneu_array**2))
+    curso_suspensao_max = np.max(np.abs(z_s - z_u))
+    
+    # Adicionar ao Dataset
+    dataset_completo.append({
+        'M_s': M_s, 'm_u': m_u, 'k_s': k_s, 'c_s': c_s, 'k_t': k_t, 
+        'Velocidade_kmh': dataset_inputs['Velocidade_kmh'][i],
+        'Perfil_Pista': perfil,
+        'Classe_ISO': rugosidade if perfil == 'ISO_8608' else 0,
+        'J1_Conforto_Acc_RMS': J1_conforto,
+        'J2_Seguranca_Fpneu_RMS': J2_seguranca,
+        'Curso_Suspensao_Max': curso_suspensao_max
+    })
+    
+    if (i + 1) % 500 == 0:
+        print(f"Progresso: {i + 1}/{NUM_SIMULACOES} simulações concluídas...")
+
+# =====================================================================
+# 4. EXPORTAÇÃO PARA CSV
+# =====================================================================
+df = pd.DataFrame(dataset_completo)
+df.to_csv('dataset_suspensao_completo.csv', index=False)
+print(f"Dataset gerado com sucesso em {time.time() - start_time:.2f} segundos!")
