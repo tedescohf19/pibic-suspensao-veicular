@@ -7,6 +7,10 @@ Lê os arquivos:
 Treina o modelo em PyTorch, avalia métricas (MAPE e R2) e plota gráficos de paridade e convergência.
 """
 
+import warnings
+
+warnings.warn("Estudo harmônico histórico: os 28 casos Rao compartilham origens com treino e validação. Consulte docs/metodologia.md.", stacklevel=1)
+
 import numpy as np
 import pandas as pd
 import torch
@@ -162,7 +166,7 @@ for i, col in enumerate(target_cols):
     mape_va = np.mean(np.abs((real_va[:, i] - pred_va_real[:, i]) / real_va[:, i])) * 100
     mape_te = np.mean(np.abs((real_te[:, i] - pred_te_real[:, i]) / real_te[:, i])) * 100
     r2_te   = r2_score(real_te[:, i], pred_te_real[:, i])
-    print(f"{col:12s} | Treino MAPE: {mape_tr:5.2f}% | Val MAPE: {mape_va:5.2f}% | Teste Cego (28 Rao) MAPE: {mape_te:5.2f}% (R2 = {r2_te:.4f})")
+    print(f"{col:12s} | Treino MAPE: {mape_tr:5.2f}% | Val MAPE: {mape_va:5.2f}% | Referencia (28 Rao, familias conhecidas) MAPE: {mape_te:5.2f}% (R2 = {r2_te:.4f})")
 
 # Salvar tabela comparativa dos 28 casos do Rao
 df_comp = pd.DataFrame({
@@ -187,7 +191,7 @@ axes[0, 0].plot(val_losses, 'r--', label='Validacao (200 casos)')
 axes[0, 0].set_yscale('log')
 axes[0, 0].set_xlabel('Epoca')
 axes[0, 0].set_ylabel('MSE Loss (log)')
-axes[0, 0].set_title('Curva de Aprendizado (Sem Overfitting)')
+axes[0, 0].set_title('Curva de Aprendizado')
 axes[0, 0].grid(True, which='both', linestyle='--', alpha=0.5)
 axes[0, 0].legend()
 
@@ -215,7 +219,7 @@ axes[1, 1].scatter(real_te[:, 4], pred_te_real[:, 4], c='crimson', marker='^', s
 axes[1, 1].plot([0.02, 2500], [0.02, 2500], 'k--')
 axes[1, 1].set_xscale('log'); axes[1, 1].set_yscale('log')
 axes[1, 1].set_xlabel('a_rms Real [m/s^2]'); axes[1, 1].set_ylabel('a_rms MLP [m/s^2]')
-axes[1, 1].set_title('Paridade: Aceleracao RMS (Conforto)')
+axes[1, 1].set_title('Paridade: Aceleracao RMS bruta')
 axes[1, 1].grid(True, which='both', linestyle='--', alpha=0.5); axes[1, 1].legend()
 
 plt.tight_layout()

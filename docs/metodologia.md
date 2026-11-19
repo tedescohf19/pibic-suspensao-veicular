@@ -1,5 +1,7 @@
 # Metodologia e leitura dos resultados
 
+A expansão atual tem avaliação por famílias em cinco rodadas, descrita em [treinamento-expansao.md](treinamento-expansao.md). As observações abaixo sobre partições harmônicas e o protótipo de 2 GDL referem-se às respectivas etapas históricas.
+
 ## Oscilador de 1 GDL
 
 O sistema é um oscilador massa–mola–amortecedor sob força externa, dado por m x″ + c x′ + k x = F(t). O estado contém deslocamento e velocidade. A aceleração vem da equação de equilíbrio. O estudo fixa o amortecimento relativo em 2%. A [implementação MATLAB](../src/1gdl/matlab-rao/) compara o RK4 com a solução analítica usando casos de excitação harmônica de Rao adaptados a esse amortecimento.

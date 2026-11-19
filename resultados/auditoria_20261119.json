@@ -1,0 +1,26 @@
+{
+  "estado": "verificacoes_automatizadas_aprovadas",
+  "arquivos_csv": 9,
+  "scripts_python_sintaxe": 5,
+  "harmonico_linhas": 1228,
+  "origens_compartilhadas_harmonico": 28,
+  "expansao_simulacoes": 2520,
+  "expansao_condicoes": 1080,
+  "expansao_sistemas": 60,
+  "expansao_familias": 10,
+  "recalculo_completo": true,
+  "max_erro_relativo_recalculo": 5.766498389903063e-13,
+  "amostragem_Hz": 512,
+  "duracao_s": 64,
+  "fn_Hz_min": 0.2982973857770899,
+  "fn_Hz_max": 22.923076342207608,
+  "previsoes_teste_verificadas": 1080,
+  "particoes_sem_sobreposicao": true,
+  "metricas_recalculadas_das_previsoes": 28,
+  "pendencias_cientificas": [
+    "harmonico_familias_compartilhadas",
+    "2gdl_perfil_e_unidades_e_rms",
+    "comparacao_experimental_pendente",
+    "xai_pendente"
+  ]
+}

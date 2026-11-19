@@ -1,62 +1,61 @@
 # PIBIC · Predição da resposta dinâmica de suspensão veicular
 
-O projeto investiga redes neurais como modelos substitutos para estimar a resposta de suspensões passivas. A primeira etapa usa um oscilador de **1 grau de liberdade (GDL)** para verificar a geração de dados e o treinamento. A etapa seguinte aplica o procedimento ao quarto de veículo de **2 GDL**, com movimentos separados da carroceria e da roda.
+O projeto desenvolve metamodelos neurais para suspensão passiva. A etapa atual usa um oscilador de 1 GDL sob força aplicada para organizar a geração de dados e o treinamento. O objetivo do plano individual é chegar ao quarto de veículo de 2 GDL, excitado por deslocamento da pista.
 
-| Etapa | Material no repositório | Estado |
+**Para executar o treino atual, comece pelo [roteiro de organização](docs/organizacao.md).** Para redigir, use a [relação entre afirmações e evidências](docs/artigos.md). A [auditoria de 19/11/2026](docs/auditoria-2026-11-19.md) registra o que foi verificado e as pendências.
+
+| Estudo | Banco | Situação |
 |---|---|---|
-| Oscilador harmônico de 1 GDL | Solução analítica, RK4 em MATLAB, 28 casos de Rao e banco de 1.228 simulações | Conferência numérica concluída |
-| MLP de 1 GDL | Scripts PyTorch e MATLAB, partições, gráficos e relatório | Prova de conceito para cinco indicadores |
-| Expansão de 1 GDL | Gerador e 1.260 simulações com degrau, impulso e ruído filtrado | Banco gerado e verificado. Treinamento conjunto pendente |
-| Quarto de veículo de 2 GDL | Protótipo MATLAB, demonstrações, gráficos e banco preliminar de 5.000 configurações | Revisão dos perfis de pista e dos alvos em andamento |
-| Comparação experimental | Protocolo e referências públicas | Dados externos selecionados para comparação futura |
+| Harmônico histórico de 1 GDL | 1.228 simulações e cinco indicadores | Prova de conceito com origens compartilhadas entre partições |
+| Expansão de 1 GDL v1 | 2.520 simulações, 60 sistemas, 10 famílias | Treino reproduzido e avaliado em cinco rodadas por família |
+| Quarto de veículo de 2 GDL | 5.000 configurações preliminares | Revisão do gerador de pista e dos alvos necessária |
+| XAI | Proposta aplicada à representação atual | Implementação e avaliação pendentes |
+| Comparação experimental | Fontes e protocolo selecionados | Execução pendente |
 
-## Resultados de 1 GDL
+## Treinamento atual
 
-A MLP recebe parâmetros físicos de uma simulação e estima amplitude em regime permanente, pico de deslocamento e RMS de deslocamento, velocidade e aceleração. O relatório registra **1,77% de MAPE para deslocamento RMS** e **2,38% para aceleração RMS** nos 28 casos de referência. Todos esses casos originaram variações de treino e validação. Uma divisão por famílias ainda é necessária para avaliar generalização.
+O banco de 2.520 casos inclui 180 degraus, 180 impulsos e 540 realizações em cada uma de quatro bandas de ruído. A média das três realizações por condição produz 1.080 condições. A MLP estima pico absoluto de deslocamento e RMS de deslocamento, velocidade e aceleração. Os alvos usam a janela completa de 64 s. A aceleração RMS é bruta e, no impulso, corresponde à parte regular após o salto de velocidade.
 
-![Curvas de treino e validação e gráficos de paridade do estudo harmônico](resultados/mlp-harmonica.png)
+Em cada rodada, seis famílias são usadas para treino, duas para validação e duas para teste. A rede ajusta alvos adimensionais em log e as previsões são reconstruídas no SI. A intensidade participa das escalas físicas. A arquitetura PyTorch tem camadas 128–128–64 e SiLU.
 
-A figura registra o resultado original. Veja a [leitura crítica das métricas, da curva e dos rótulos](docs/metodologia.md).
+| Indicador | MAPE de teste, revisão de 19/11 | MAPE do baseline |
+|---|---:|---:|
+| Pico absoluto de deslocamento | 5,60% | 6,99% |
+| Deslocamento RMS | 4,10% | 8,55% |
+| Velocidade RMS | 4,48% | 14,56% |
+| Aceleração RMS | 4,36% | 14,68% |
 
-Na expansão, foram gerados **90 degraus, 90 impulsos e 1.080 casos de ruído**. As quatro bandas foram definidas em relação à frequência natural. Com a mesma força RMS por sistema e nível, a banda em torno da ressonância teve a maior mediana de deslocamento RMS. Veja os [resultados por banda e a verificação com RK4](docs/expansao-1gdl.md).
+A MLP supera a mediana do treino no resultado geral dos quatro indicadores e em 11 de 24 combinações de categoria e alvo. As tabelas completas, cinco checkpoints, figuras e ambiente estão em [resultados da revisão](resultados/expansao_1gdl/revisao_20261119/relatorio_mlp_1gdl.md). Consulte a [metodologia do treino](docs/treinamento-expansao.md) para interpretar as escalas, a dispersão do ruído e os limites de generalização.
 
-## Reprodução
+## Executar
 
-Use Python 3.11 ou mais recente. Os comandos abaixo partem da raiz do repositório.
+Use Python 3.11 ou mais recente. A revisão foi executada em Python 3.12, CPU, com versões registradas no ambiente da execução. Na raiz do repositório execute
 
-**Gerar o banco expandido e exportar uma série de exemplo**
-
-~~~powershell
-python -m pip install numpy
-New-Item -ItemType Directory -Force gerados | Out-Null
-python src/1gdl/expansao/gerar_banco_1gdl.py dados/1gdl/harmonico/dataset_completo_treinamento_suspensao_1dof.csv gerados/banco_1gdl_excitacoes.csv
-python src/1gdl/expansao/gerar_banco_1gdl.py gerados/banco_1gdl_excitacoes.csv gerados/exemplo_serie.csv --serie G01-V0-A1-ruido-larga-1
-~~~
-
-**Repetir o treinamento original em PyTorch**
-
-~~~powershell
+```powershell
 python -m pip install -r requirements-mlp.txt
-New-Item -ItemType Directory -Force gerados/mlp | Out-Null
-Copy-Item dados/1gdl/harmonico/banco_*.csv gerados/mlp/
-Push-Location gerados/mlp
-python ../../src/1gdl/mlp/treinar_mlp_sdof.py
-Pop-Location
-~~~
+python scripts/verificar_projeto.py
+python src/1gdl/mlp/treinar_expansao_1gdl.py
+```
 
-O script usa GPU se CUDA estiver disponível e grava a figura e a tabela de previsões na pasta de execução. As sementes são fixas. Os resultados podem variar conforme o ambiente. A [versão MATLAB](src/1gdl/mlp/treinar_mlp_sdof.m) usa outra arquitetura e requer Deep Learning Toolbox. Rode a partir de uma pasta com os mesmos três CSVs.
+O comando lê a configuração e confere o hash do CSV. Cada execução grava tabelas, gráficos, proveniência, cinco modelos e um ZIP em uma nova pasta dentro de `gerados/`. Essa pasta fica fora do Git. O [notebook atual](notebooks/treino_expansao_1gdl.ipynb) oferece a mesma entrada no Colab.
 
-Em MATLAB, execute [run_all.m](src/1gdl/matlab-rao/run_all.m) em uma cópia de trabalho da pasta para recalcular os casos de Rao. O [lote de 2 GDL](src/2gdl/matlab/automacao_simulacoes.m) lê o CSV base de 5.000 configurações na pasta de execução e grava um novo CSV. Para reproduzir esse lote, copie o CSV e os três scripts de src/2gdl/matlab para uma pasta separada e execute automacao_simulacoes nessa pasta.
+Para recalcular os seis indicadores de todas as simulações e conferir os CSVs execute
 
-O [exemplo de validação de 40 kg](src/1gdl/matlab-validacao/validacao_sdof_rk4.m) tem sua própria cópia do integrador. Execute o exemplo a partir da pasta dele para usar a versão correspondente. As [demonstrações de 2 GDL](src/2gdl/demos/) e as [figuras arquivadas](resultados/) registram explorações do modelo e dos perfis C e D. Consulte a metodologia antes de interpretar os rótulos de pista dessas demonstrações.
+```powershell
+python scripts/verificar_projeto.py --recalcular
+```
 
-## Documentação
+## Arquivos e rastreabilidade
 
-- [Modelos, critérios, resultados e próximos passos](docs/metodologia.md)
-- [Dicionário dos CSVs](docs/dados.md)
-- [Análise de degrau, impulso e ruído por faixa](docs/expansao-1gdl.md)
+- [Organização, geração de dados e comandos por etapa](docs/organizacao.md)
+- [Configuração do experimento atual](experimentos/expansao_1gdl_v1.json)
+- [Manifesto dos nove CSVs com hashes e esquemas](experimentos/manifesto_dados.json)
+- [Dicionário dos dados](docs/dados.md)
+- [Metodologia e leitura crítica do estudo harmônico e de 2 GDL](docs/metodologia.md)
+- [Geração e verificação do banco inicial de 1.260 casos](docs/expansao-1gdl.md)
 - [Protocolo de comparação experimental](docs/comparacao-experimental.md)
-- [Bibliografia comentada e materiais consultados](docs/referencias.md)
+- [Referências e papel de cada fonte](docs/referencias.md)
+- [Notebooks e capturas históricas](notebooks/historico/README.md)
 - [Relatório técnico original](docs/relatorio-tecnico-original.pdf)
 
-Livros, artigos, normas e bancos externos são creditados por meio de referências e links para as fontes.
+O relatório e a figura harmônica registram uma etapa anterior. As 28 origens dos casos Rao aparecem no treino e na validação desse estudo. Os modelos MATLAB e PyTorch históricos usam arquiteturas diferentes. O banco de 2 GDL tem pendências identificadas junto aos arquivos. Livros, artigos e normas são creditados por referência à fonte, com os parâmetros e protocolos a conferir na redação de cada artigo.

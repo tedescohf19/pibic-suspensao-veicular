@@ -1,5 +1,7 @@
 # Expansão do banco de 1 GDL
 
+Este documento descreve o banco inicial de 1.260 simulações. A versão atual preserva esses casos e acrescenta 1.260 variantes, totalizando 2.520. Veja o [experimento de treinamento atual](treinamento-expansao.md) e o [roteiro de geração](organizacao.md). As métricas RK4 abaixo correspondem aos 12 casos selecionados do banco inicial.
+
 O banco tem 1.260 novas simulações de um oscilador massa–mola–amortecedor com força externa. O gerador parte de 10 combinações distintas de massa e rigidez entre os casos de referência do banco harmônico. Para cada combinação, usa o sistema nominal e duas variações de massa e rigidez de até 15%, com amortecimento relativo fixo de 2%. São 30 sistemas e três níveis de excitação por sistema. As condições iniciais antes da aplicação da força são nulas.
 
 ## Excitações e resultados

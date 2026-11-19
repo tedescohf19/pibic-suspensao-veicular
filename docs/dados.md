@@ -1,5 +1,7 @@
 # Dicionário dos dados
 
+A expansão atual usa `dados/1gdl/expansao/banco_1gdl_expandido_2520.csv`. O CSV de 1.260 casos permanece como versão anterior. Os hashes e esquemas estão no [manifesto](../experimentos/manifesto_dados.json). As condições agregadas e previsões de treino estão na pasta da execução, com a interpretação documentada em [treinamento-expansao.md](treinamento-expansao.md).
+
 | Pasta | Conteúdo | Cada linha representa |
 |---|---|---|
 | [1 GDL harmônico](../dados/1gdl/harmonico/) | CSV consolidado, três partições lidas pela MLP e tabela RK4 | Uma simulação |

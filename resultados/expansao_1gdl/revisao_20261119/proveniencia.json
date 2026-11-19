@@ -1,0 +1,60 @@
+{
+  "arquivo_fonte": "dados/1gdl/expansao/banco_1gdl_expandido_2520.csv",
+  "experimento": {
+    "id": "expansao_1gdl_v1",
+    "versao": 1,
+    "csv": "dados/1gdl/expansao/banco_1gdl_expandido_2520.csv",
+    "csv_sha256": "43b95bdb2feea3de9835051884980797f3289db23cea4bb68470b33500e65798",
+    "n_simulacoes": 2520,
+    "n_condicoes": 1080,
+    "n_familias": 10,
+    "n_sistemas": 60,
+    "alvos": [
+      "x_pico_abs_m",
+      "x_rms_m",
+      "v_rms_m_s",
+      "a_rms_m_s2"
+    ],
+    "semente": 42,
+    "n_rodadas": 5,
+    "epocas_maximas": 300,
+    "paciencia": 45,
+    "batch_size": 64,
+    "learning_rate": 0.003,
+    "weight_decay": 0.0001,
+    "arquitetura": [
+      128,
+      128,
+      64
+    ],
+    "ativacao": "SiLU",
+    "zeta": 0.02,
+    "tf_s": 64,
+    "fs_Hz": 512,
+    "ruido_realizacoes": 3,
+    "agregacao_ruido": "media_aritmetica_por_condicao",
+    "escala_alvos": [
+      "S",
+      "S",
+      "S*wn",
+      "S*wn**2"
+    ],
+    "split": "GroupKFold_teste_e_proximo_fold_validacao_por_grupo_origem"
+  },
+  "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+  "numpy": "2.3.5",
+  "pandas": "3.0.1",
+  "sklearn": "1.9.1",
+  "matplotlib": "3.11.2",
+  "executado_em_utc": "2026-11-19T03:33:45.065870+00:00",
+  "script_sha256": "b515002fdbd10171dfc543e8447d68dd7cc285803002402846869ef387e3c15d",
+  "sha256": "43b95bdb2feea3de9835051884980797f3289db23cea4bb68470b33500e65798",
+  "sementes_treino": [
+    43,
+    44,
+    45,
+    46,
+    47
+  ],
+  "torch": "2.15.0+cpu"
+}

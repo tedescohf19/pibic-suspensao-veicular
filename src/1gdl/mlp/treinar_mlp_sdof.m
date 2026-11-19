@@ -7,6 +7,7 @@
 % Compativel com MATLAB R2016b ou superior (Deep Learning / Neural Network Toolbox).
 
 clear; clc; close all;
+warning('Estudo harmonico historico com origens compartilhadas. Consulte docs/metodologia.md.');
 rng(42); % Semente fixa para reprodutibilidade
 
 %% 1. Carregar os Bancos de Dados CSV
@@ -50,7 +51,7 @@ Y_te_real = [T_test.X_teor, T_test.Xmax_total, T_test.x_rms, T_test.v_rms, T_tes
 %% 3. Configuracao e Treinamento da Rede Neural MLP (fitnet)
 % Arquitetura com 3 camadas ocultas [64, 64, 32] e ativacao tangente hiperbolica (tansig)
 hiddenSizes = [64, 64, 32];
-net = fitnet(hiddenSizes, 'trainlm'); % Levenberg-Marquardt com regularizacao Bayesiana/Early Stopping
+net = fitnet(hiddenSizes, 'trainlm'); % Levenberg-Marquardt; regularizacao e parada por validacao configuradas abaixo
 
 % Divisao estrita usando os 1000 casos de treino e 200 de validacao
 net.divideFcn = 'divideind';
@@ -85,7 +86,7 @@ for i = 1:numel(nomes_alvos)
     ss_tot = sum((Y_te_real(i,:) - mean(Y_te_real(i,:))).^2);
     r2_te = 1 - ss_res / ss_tot;
     
-    fprintf('%-12s | Treino MAPE: %5.2f%% | Val MAPE: %5.2f%% | Teste Cego (28 Rao) MAPE: %5.2f%% (R2 = %.4f)\n', ...
+    fprintf('%-12s | Treino MAPE: %5.2f%% | Val MAPE: %5.2f%% | Referencia (28 Rao, familias conhecidas) MAPE: %5.2f%% (R2 = %.4f)\n', ...
             nomes_alvos{i}, mape_tr, mape_va, mape_te, r2_te);
 end
 
@@ -97,7 +98,7 @@ semilogy(0:tr.num_epochs, tr.perf, 'b-', 'LineWidth', 1.5); hold on;
 semilogy(0:tr.num_epochs, tr.vperf, 'r--', 'LineWidth', 1.5);
 grid on; box on;
 xlabel('Epoca'); ylabel('MSE Loss (escala log)');
-title('Convergencia do Treinamento (Sem Overfitting)');
+title('Convergencia do Treinamento');
 legend('Treino (1000)', 'Validacao (200)', 'Location', 'best');
 
 subplot(2,2,2);

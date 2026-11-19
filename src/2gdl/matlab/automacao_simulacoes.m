@@ -1,5 +1,6 @@
 % automacao_simulacoes.m
 clear; clc;
+warning('Lote preliminar: perfil ISO_8608 senoidal, classe ignorada, RMS adaptativo e J2 em metros. Consulte docs/auditoria-2026-11-19.md.');
 
 % 1. Carregar o ficheiro completo diretamente pelo código
 disp('A carregar o ficheiro CSV...');
